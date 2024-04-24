@@ -1,0 +1,7 @@
+*.txt
+*.crt
+*.key
+*.bk
+*.db
+*.exe
+bin/

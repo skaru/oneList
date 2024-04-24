@@ -1,0 +1,35 @@
+{{template "header.html"}}
+<form action="/save" method="post">
+    <input type="hidden" name="id" value="{{.Item.ID}}">
+    Name <input type="text" name="name" value="{{.Item.Name}}"><br>
+    <div class="grid">
+      <label>
+        Status
+        <select name="status" autocomplete="off">
+          <option {{if eq .Item.Status 1}}selected="selected"{{end}} value="1">Not Started</option>
+          <option {{if eq .Item.Status 2}}selected="selected"{{end}} value="2">On Hold</option>
+          <option {{if eq .Item.Status 3}}selected="selected"{{end}} value="3">In Progress</option>
+          <option {{if eq .Item.Status 0}}selected="selected"{{end}} value="0">Done</option>
+        </select>
+      </label>
+      <label>
+        Due
+        {{if .Item.Due.IsZero}}
+          <input type="date" name="due" value='{{.Now.Format "2006-01-02"}}'>
+        {{else}}
+          <input type="date" name="due" value='{{.Item.Due.Format "2006-01-02"}}'>
+        {{end}}
+      </label>
+      <label>
+        Reminder interval
+        <input type="number" name="reminder_interval" value="{{.Item.Reminder_interval}}">
+      </label>
+    </div>
+    <textarea style="resize:vertical;min-height: 410px;" type="textarea" name="description">{{.Item.Description}}</textarea><br>
+    <div class="grid">
+      <input type="submit" value="SAVE">
+      <a role="button" href="/view?ID={{.Item.ID}}">CANCEL</a>
+      <a role="button" href="/">BACK</a>
+    </div>
+</form>
+{{template "footer.html"}}

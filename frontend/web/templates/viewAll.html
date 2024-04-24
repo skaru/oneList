@@ -1,0 +1,11 @@
+{{template "header.html"}}
+<form action="/create" method="post">
+  <input type="text" name="name">
+  <!-- <input type="submit" value="Save"> -->
+</form>
+<ul>
+    {{range .Items}}
+            <li class="{{.ID}}"><a href="/view?ID={{.ID}}">{{.Name}}</a></li>
+    {{end}}
+</ul>
+{{template "footer.html"}}

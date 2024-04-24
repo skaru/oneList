@@ -1,0 +1,28 @@
+{{template "header.html"}}
+<h1>{{.Item.Name}}</h1>
+<p>
+    {{if eq .Item.Status 0}}
+      Status: Done
+    {{else if eq .Item.Status 1}}
+      Status: Not Started
+    {{else if eq .Item.Status 2}}
+      Status: On Hold
+    {{else if eq .Item.Status 3}}
+      Status: In Progress
+    {{end}}
+    <br>  
+
+    {{if not (.Item.Due.IsZero)}}
+      Due: {{.Item.Due.Format "02-01-2006"}}<br>
+    {{end}}
+
+    {{if ne .Description ""}}
+      {{.Description}}
+    {{end}}
+</p>
+<section class="grid">
+  <a role="button" href="/edit?ID={{.Item.ID}}">EDIT</a>
+  <a role="button" href="/delete?ID={{.Item.ID}}">DELETE</a>
+  <a role="button" href="/">BACK</a>
+</section>
+{{template "footer.html"}}
