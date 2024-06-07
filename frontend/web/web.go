@@ -71,7 +71,7 @@ func (web *Web) Init(storage storage.Storage, username string, password string) 
 	// Build a server:
 	server := http.Server{
 		// Other options
-		Addr:      ":9090",
+		Addr:      ":8080",
 		TLSConfig: tlsConfig,
 	}
 
@@ -100,22 +100,31 @@ func (web *Web) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tmpl := template.Must(template.ParseFS(htmlFiles, TEMPLATE_DIR+"login.html", TEMPLATE_DIR+"header.html", TEMPLATE_DIR+"footer.html")) //remove into one call after testing done
+	tmpl := template.Must(template.ParseFS(htmlFiles, TEMPLATE_DIR+"login.html", TEMPLATE_DIR+"header.html", TEMPLATE_DIR+"footer.html")) //remove into one call after testing
 	tmpl.Execute(w, nil)
 }
 
 func (web *Web) viewAll(w http.ResponseWriter, r *http.Request) {
 	if web.validate(w, r) {
-		items := web.storage.FetchAllItems()
-		item.Sort(items)
-
-		data := struct {
-			Items []item.Item
-		}{
-			Items: items,
+		var data struct {
+			Items       []item.Item
+			Description string
 		}
 
-		tmpl := template.Must(template.ParseFS(htmlFiles, TEMPLATE_DIR+"viewAll.html", TEMPLATE_DIR+"header.html", TEMPLATE_DIR+"footer.html")) //remove into one call after testing done
+		items := web.storage.FetchAllItems()
+
+		if len(items) > 0 {
+			item.UpdateAndSortItems(items)
+
+			data = struct {
+				Items       []item.Item
+				Description string
+			}{
+				Items:       items,
+				Description: web.parseDescription(items[0]),
+			}
+		}
+		tmpl := template.Must(template.ParseFS(htmlFiles, TEMPLATE_DIR+"viewAll.html", TEMPLATE_DIR+"header.html", TEMPLATE_DIR+"footer.html")) //remove into one call after testing
 		tmpl.Execute(w, data)
 	}
 }
@@ -138,10 +147,10 @@ func (web *Web) view(w http.ResponseWriter, r *http.Request) {
 			Description string
 		}{
 			Item:        selectedItem,
-			Description: buffer.String(),
+			Description: web.parseDescription(selectedItem),
 		}
 
-		tmpl := template.Must(template.ParseFS(htmlFiles, TEMPLATE_DIR+"view.html", TEMPLATE_DIR+"header.html", TEMPLATE_DIR+"footer.html")) //remove into one call after testing done
+		tmpl := template.Must(template.ParseFS(htmlFiles, TEMPLATE_DIR+"view.html", TEMPLATE_DIR+"header.html", TEMPLATE_DIR+"footer.html")) //remove into one call after testing
 		tmpl.Execute(w, data)
 	}
 }
@@ -158,7 +167,7 @@ func (web *Web) edit(w http.ResponseWriter, r *http.Request) {
 			Now:  time.Now().AddDate(0, 0, -1),
 		}
 
-		tmpl := template.Must(template.ParseFS(htmlFiles, TEMPLATE_DIR+"edit.html", TEMPLATE_DIR+"header.html", TEMPLATE_DIR+"footer.html")) //remove into one call after testing done
+		tmpl := template.Must(template.ParseFS(htmlFiles, TEMPLATE_DIR+"edit.html", TEMPLATE_DIR+"header.html", TEMPLATE_DIR+"footer.html")) //remove into one call after testing
 		tmpl.Execute(w, data)
 	}
 }
@@ -184,8 +193,8 @@ func (web *Web) save(w http.ResponseWriter, r *http.Request) {
 		selectedItem.Description = r.Form.Get("description")
 		selectedItem.Due = due
 		selectedItem.Reminder_interval, _ = strconv.Atoi(r.Form.Get("reminder_interval"))
-		status, _ := strconv.Atoi(r.Form.Get("status"))
-		selectedItem.Status = item.Progress(status)
+		status, _ := strconv.Atoi(r.Form.Get("Display_status"))
+		selectedItem.Display_status = item.Progress(status)
 		selectedItem.Last_update = time.Now()
 
 		web.storage.UpdateItem(selectedItem)
@@ -209,9 +218,15 @@ func (web *Web) create(w http.ResponseWriter, r *http.Request) {
 		}
 
 		name := r.Form.Get("name")
-
 		if name != "" {
-			web.storage.CreateItem(name)
+			index := len(web.storage.FetchAllItems())
+			if index <= 0 {
+				index = 1
+			}
+
+			item := item.NewItem(index, r.Form.Get("name"))
+			log.Println(item)
+			web.storage.AddItem(item)
 		}
 
 		http.Redirect(w, r, "/", http.StatusFound)
@@ -235,6 +250,13 @@ func (web *Web) validate(w http.ResponseWriter, r *http.Request) bool {
 	}
 
 	return true
+}
+
+func (web *Web) parseDescription(item item.Item) string {
+	var buffer bytes.Buffer
+	web.md.Convert([]byte(item.Description), &buffer)
+
+	return buffer.String()
 }
 
 func dateEqual(date1, date2 time.Time) bool {

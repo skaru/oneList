@@ -12,60 +12,68 @@ const (
 	NOT_STARTED
 	IN_PROGRESS
 	DONE
+	NEW
+	OVERDUE
+	NOTIFICATION
 )
 
 type Item struct {
 	ID                int
 	Status            Progress
+	Display_status    Progress
 	Name              string
 	Description       string
-	Priority          int
 	Due               time.Time
 	Reminder_interval int
 	Last_update       time.Time
-	Creation_date     time.Time
 }
 
-func Sort(items []Item) {
-	sort.Slice(items, func(i, j int) bool {
-		// Place items with Status 0 at the bottom
-		if items[i].Status == 0 && items[j].Status != 0 {
-			return false
-		} else if items[i].Status != 0 && items[j].Status == 0 {
-			return true
+func NewItem(id int, name string) Item {
+	return Item{
+		ID:                id,
+		Status:            NEW,
+		Display_status:    NOT_STARTED,
+		Name:              name,
+		Description:       "",
+		Due:               time.Time{},
+		Reminder_interval: 0,
+		Last_update:       time.Time{},
+	}
+}
+
+func UpdateAndSortItems(items []Item) {
+	updateItems(&items)
+	sort.Sort(ByProgress(items))
+}
+
+func updateItems(items *[]Item) {
+	for i, _ := range *items {
+		item := &((*items)[i])
+		if item.Reminder_interval != 0 && item.Last_update.AddDate(0, 0, item.Reminder_interval).Before(time.Now()) {
+			item.Status = NOTIFICATION
+		} else if !item.Due.IsZero() && item.Due.Before(time.Now()) {
+			item.Status = OVERDUE
+		} else if item.Last_update.IsZero() {
+			item.Status = NEW
+		} else {
+			item.Status = item.Display_status
 		}
+	}
+}
 
-		// Check if reminder interval is due
-		iReminderDue := items[i].Reminder_interval > 0 && items[i].Last_update.AddDate(0, 0, items[i].Reminder_interval).Before(time.Now())
-		jReminderDue := items[j].Reminder_interval > 0 && items[j].Last_update.AddDate(0, 0, items[j].Reminder_interval).Before(time.Now())
+type ByProgress []Item
 
-		if iReminderDue != jReminderDue {
-			return iReminderDue
-		}
-
-		// Check for Last_update
-		iUpdateIsZero := items[i].Last_update.IsZero()
-		jUpdateIsZero := items[j].Last_update.IsZero()
-
-		if iUpdateIsZero != jUpdateIsZero {
-			return iUpdateIsZero
-		} else if iUpdateIsZero {
-			return items[i].Creation_date.Before(items[j].Creation_date)
-		}
-
-		// Sort by Status in descending order
-		if items[i].Status != items[j].Status {
-			return items[i].Status > items[j].Status
-		}
-
-		// For items with the same Status, check for due dates
-		iDueIsZero := items[i].Due.IsZero()
-		jDueIsZero := items[j].Due.IsZero()
-
-		if iDueIsZero != jDueIsZero {
-			return jDueIsZero
-		}
-
-		return items[i].Due.Before(items[j].Due)
-	})
+func (a ByProgress) Len() int      { return len(a) }
+func (a ByProgress) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a ByProgress) Less(i, j int) bool {
+	priorityOrder := map[Progress]int{
+		NOTIFICATION: 0,
+		OVERDUE:      1,
+		NEW:          2,
+		IN_PROGRESS:  3,
+		ON_HOLD:      4,
+		NOT_STARTED:  5,
+		DONE:         6,
+	}
+	return priorityOrder[a[i].Status] < priorityOrder[a[j].Status]
 }

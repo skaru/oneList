@@ -1,13 +1,13 @@
 {{template "header.html"}}
 <h1>{{.Item.Name}}</h1>
 <p>
-    {{if eq .Item.Status 0}}
+    {{if eq .Item.Display_status 3}}
       Status: Done
-    {{else if eq .Item.Status 1}}
+    {{else if eq .Item.Display_status 1}}
       Status: Not Started
-    {{else if eq .Item.Status 2}}
+    {{else if eq .Item.Display_status 0}}
       Status: On Hold
-    {{else if eq .Item.Status 3}}
+    {{else if eq .Item.Display_status 2}}
       Status: In Progress
     {{end}}
     <br>  

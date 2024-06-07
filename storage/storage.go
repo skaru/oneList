@@ -6,7 +6,7 @@ import (
 )
 
 type Storage interface {
-	CreateItem(name string)
+	AddItem(item item.Item)
 	DeleteItem(ID int)
 	UpdateItem(item item.Item)
 	FetchAllItems() []item.Item

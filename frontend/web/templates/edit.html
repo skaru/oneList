@@ -5,11 +5,11 @@
     <div class="grid">
       <label>
         Status
-        <select name="status" autocomplete="off">
-          <option {{if eq .Item.Status 1}}selected="selected"{{end}} value="1">Not Started</option>
-          <option {{if eq .Item.Status 2}}selected="selected"{{end}} value="2">On Hold</option>
-          <option {{if eq .Item.Status 3}}selected="selected"{{end}} value="3">In Progress</option>
-          <option {{if eq .Item.Status 0}}selected="selected"{{end}} value="0">Done</option>
+        <select name="Display_status" autocomplete="off">
+          <option {{if eq .Item.Display_status 1}}selected="selected"{{end}} value="1">Not Started</option>
+          <option {{if eq .Item.Display_status 0}}selected="selected"{{end}} value="0">On Hold</option>
+          <option {{if eq .Item.Display_status 2}}selected="selected"{{end}} value="2">In Progress</option>
+          <option {{if eq .Item.Display_status 3}}selected="selected"{{end}} value="3">Done</option>
         </select>
       </label>
       <label>
