@@ -3,6 +3,7 @@ package main
 import (
 	"one-list/frontend"
 	"one-list/frontend/web"
+	"one-list/list"
 	"one-list/storage"
 	"one-list/storage/sqlite"
 	"os"
@@ -25,8 +26,11 @@ func main() {
 	defer storage.Close()
 	init.Wait()
 
+	var list list.List = list.List{}
+	list.Init(storage)
+
 	var frontend frontend.Frontend = &web.Web{}
-	go frontend.Init(storage, USERNAME, PASSWORD)
+	go frontend.Init(list, USERNAME, PASSWORD)
 	defer frontend.Close()
 
 	<-c

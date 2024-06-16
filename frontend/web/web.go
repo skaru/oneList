@@ -7,7 +7,7 @@ import (
 	"log"
 	"net/http"
 	"one-list/item"
-	"one-list/storage"
+	"one-list/list"
 	"strconv"
 	"strings"
 	"text/template"
@@ -29,14 +29,14 @@ var htmlFiles embed.FS
 const TEMPLATE_DIR = "templates/"
 
 type Web struct {
-	storage    storage.Storage
+	list       list.List
 	authCookie http.Cookie
 	md         goldmark.Markdown
 	//templates  map[string]*template.Template
 }
 
-func (web *Web) Init(storage storage.Storage, username string, password string) {
-	web.storage = storage
+func (web *Web) Init(list list.List, username string, password string) {
+	web.list = list
 
 	web.md = goldmark.New(
 		goldmark.WithExtensions(extension.GFM),
@@ -62,15 +62,11 @@ func (web *Web) Init(storage storage.Storage, username string, password string) 
 	log.Println("Starting webserver")
 	cert, _ := tls.X509KeyPair(certFile, keyFile)
 
-	// Construct a tls.config
 	tlsConfig := &tls.Config{
 		Certificates: []tls.Certificate{cert},
-		// Other options
 	}
 
-	// Build a server:
 	server := http.Server{
-		// Other options
 		Addr:      ":8080",
 		TLSConfig: tlsConfig,
 	}
@@ -111,11 +107,9 @@ func (web *Web) viewAll(w http.ResponseWriter, r *http.Request) {
 			Description string
 		}
 
-		items := web.storage.FetchAllItems()
+		items := web.list.GetItems()
 
 		if len(items) > 0 {
-			item.UpdateAndSortItems(items)
-
 			data = struct {
 				Items       []item.Item
 				Description string
@@ -137,7 +131,10 @@ func (web *Web) view(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		selectedItem := web.storage.FetchItem(ID)
+		selectedItem := web.list.GetItem(ID)
+		if selectedItem == nil {
+			return
+		}
 
 		var buffer bytes.Buffer
 		web.md.Convert([]byte(selectedItem.Description), &buffer)
@@ -146,8 +143,8 @@ func (web *Web) view(w http.ResponseWriter, r *http.Request) {
 			Item        item.Item
 			Description string
 		}{
-			Item:        selectedItem,
-			Description: web.parseDescription(selectedItem),
+			Item:        *selectedItem,
+			Description: web.parseDescription(*selectedItem),
 		}
 
 		tmpl := template.Must(template.ParseFS(htmlFiles, TEMPLATE_DIR+"view.html", TEMPLATE_DIR+"header.html", TEMPLATE_DIR+"footer.html")) //remove into one call after testing
@@ -158,12 +155,15 @@ func (web *Web) view(w http.ResponseWriter, r *http.Request) {
 func (web *Web) edit(w http.ResponseWriter, r *http.Request) {
 	if web.validate(w, r) {
 		ID, _ := strconv.Atoi(r.URL.Query().Get("ID"))
-		selectedItem := web.storage.FetchItem(ID)
+		selectedItem := web.list.GetItem(ID)
+		if selectedItem == nil {
+			return
+		}
 		data := struct {
 			Item item.Item
 			Now  time.Time
 		}{
-			Item: selectedItem,
+			Item: *selectedItem,
 			Now:  time.Now().AddDate(0, 0, -1),
 		}
 
@@ -181,7 +181,10 @@ func (web *Web) save(w http.ResponseWriter, r *http.Request) {
 		}
 
 		ID, _ := strconv.Atoi(r.Form.Get("id"))
-		selectedItem := web.storage.FetchItem(ID)
+		selectedItem := web.list.GetItem(ID)
+		if selectedItem == nil {
+			return
+		}
 
 		due, _ := time.Parse("2006-01-02", r.Form.Get("due"))
 
@@ -197,7 +200,7 @@ func (web *Web) save(w http.ResponseWriter, r *http.Request) {
 		selectedItem.Display_status = item.Progress(status)
 		selectedItem.Last_update = time.Now()
 
-		web.storage.UpdateItem(selectedItem)
+		web.list.SetItem(*selectedItem)
 
 		referer := r.Header.Get("Referer")
 		if strings.Contains(referer, "edit") {
@@ -219,14 +222,7 @@ func (web *Web) create(w http.ResponseWriter, r *http.Request) {
 
 		name := r.Form.Get("name")
 		if name != "" {
-			index := len(web.storage.FetchAllItems())
-			if index <= 0 {
-				index = 1
-			}
-
-			item := item.NewItem(index, r.Form.Get("name"))
-			log.Println(item)
-			web.storage.AddItem(item)
+			web.list.NewItem(r.Form.Get("name"))
 		}
 
 		http.Redirect(w, r, "/", http.StatusFound)
@@ -236,7 +232,7 @@ func (web *Web) create(w http.ResponseWriter, r *http.Request) {
 func (web *Web) delete(w http.ResponseWriter, r *http.Request) {
 	if web.validate(w, r) {
 		ID, _ := strconv.Atoi(r.URL.Query().Get("ID"))
-		web.storage.DeleteItem(ID)
+		web.list.DeleteItem(ID)
 
 		http.Redirect(w, r, "/", http.StatusFound)
 	}

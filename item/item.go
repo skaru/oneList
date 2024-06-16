@@ -1,7 +1,6 @@
 package item
 
 import (
-	"sort"
 	"time"
 )
 
@@ -26,39 +25,6 @@ type Item struct {
 	Due               time.Time
 	Reminder_interval int
 	Last_update       time.Time
-}
-
-func NewItem(id int, name string) Item {
-	return Item{
-		ID:                id,
-		Status:            NEW,
-		Display_status:    NOT_STARTED,
-		Name:              name,
-		Description:       "",
-		Due:               time.Time{},
-		Reminder_interval: 0,
-		Last_update:       time.Time{},
-	}
-}
-
-func UpdateAndSortItems(items []Item) {
-	updateItems(&items)
-	sort.Sort(ByProgress(items))
-}
-
-func updateItems(items *[]Item) {
-	for i, _ := range *items {
-		item := &((*items)[i])
-		if item.Reminder_interval != 0 && item.Last_update.AddDate(0, 0, item.Reminder_interval).Before(time.Now()) {
-			item.Status = NOTIFICATION
-		} else if !item.Due.IsZero() && item.Due.Before(time.Now()) {
-			item.Status = OVERDUE
-		} else if item.Last_update.IsZero() {
-			item.Status = NEW
-		} else {
-			item.Status = item.Display_status
-		}
-	}
 }
 
 type ByProgress []Item

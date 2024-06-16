@@ -1,8 +1,8 @@
 package frontend
 
-import "one-list/storage"
+import "one-list/list"
 
 type Frontend interface {
-	Init(st storage.Storage, username string, password string)
+	Init(st list.List, username string, password string)
 	Close()
 }
