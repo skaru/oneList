@@ -26,7 +26,7 @@ func (sql Sqlite) DeleteItem(ID int) {
 		log.Println(err)
 	}
 	defer stmt.Close()
-	_, err = stmt.Query(ID)
+	_, err = stmt.Exec(ID)
 	if err != nil {
 		log.Println(err)
 	}
@@ -38,7 +38,7 @@ func (sql Sqlite) AddItem(item item.Item) {
 		log.Println(err)
 	}
 	defer stmt.Close()
-	_, err = stmt.Query(item.Name, item.Display_status, item.Reminder_interval)
+	_, err = stmt.Exec(item.Name, item.Display_status, item.Reminder_interval)
 	if err != nil {
 		log.Println(err)
 	}
@@ -62,7 +62,7 @@ func (sql Sqlite) UpdateItem(item item.Item) {
 		lastUpdate = item.Last_update.Unix()
 	}
 
-	_, err = stmt.Query(
+	_, err = stmt.Exec(
 		item.Display_status,
 		item.Name,
 		item.Description,
