@@ -41,5 +41,20 @@ func (a ByProgress) Less(i, j int) bool {
 		NOT_STARTED:  5,
 		DONE:         6,
 	}
-	return priorityOrder[a[i].Status] < priorityOrder[a[j].Status]
+
+	if priorityOrder[a[i].Status] != priorityOrder[a[j].Status] {
+		return priorityOrder[a[i].Status] < priorityOrder[a[j].Status]
+	}
+
+	if !a[i].Due.IsZero() && a[j].Due.IsZero() {
+		return true
+	}
+	if a[i].Due.IsZero() && !a[j].Due.IsZero() {
+		return false
+	}
+	if !a[i].Due.IsZero() && !a[j].Due.IsZero() {
+		return a[i].Due.Before(a[j].Due)
+	}
+
+	return false
 }
