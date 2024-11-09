@@ -15,6 +15,7 @@ import (
 
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
+	"github.com/yuin/goldmark/renderer/html"
 )
 
 //go:embed server.crt
@@ -40,6 +41,9 @@ func (web *Web) Init(list list.List, username string, password string) {
 
 	web.md = goldmark.New(
 		goldmark.WithExtensions(extension.GFM),
+		goldmark.WithRendererOptions(
+			html.WithHardWraps(),
+		),
 	)
 
 	web.authCookie = http.Cookie{
