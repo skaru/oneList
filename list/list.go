@@ -44,7 +44,7 @@ func (list *List) GetItem(id int) *item.Item {
 
 func (list *List) SetItem(item item.Item) {
 	index, _ := list.findItemByID(item.ID)
-	if index == 0 {
+	if index == -1 {
 		return
 	}
 
@@ -103,5 +103,5 @@ func (list *List) findItemByID(id int) (int, *item.Item) {
 			return index, &item
 		}
 	}
-	return 0, nil
+	return -1, nil
 }
